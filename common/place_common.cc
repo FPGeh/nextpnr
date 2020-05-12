@@ -508,7 +508,8 @@ int get_constraints_distance(const Context *ctx, const CellInfo *cell)
         if (cell->constr_y != cell->UNCONSTR)
             dist += std::abs(cell->constr_y - loc.y);
         if (cell->constr_z != cell->UNCONSTR)
-            dist += std::abs(cell->constr_z - loc.z);
+            if (cell->constr_abs_z)
+                dist += std::abs(cell->constr_z - loc.z);
     } else {
         if (cell->constr_parent->bel == BelId())
             return 100000;
