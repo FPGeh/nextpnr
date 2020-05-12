@@ -304,9 +304,88 @@ class ChainConstrainer
         log_info("    %4d LCs used to legalise carry chains.\n", feedio_lcs);
     }
 
+    void process_cascades()
+    {
+        // Assumes process_chains() already called (and thus any carry-
+        // related constraints are already set)
+        std::vector<CellChain> lut_cascades = find_chains(
+                ctx, [](const Context *ctx, const CellInfo *cell) { return is_lc(ctx, cell); },
+                [](const Context *ctx, const CellInfo *cell) -> CellInfo* {
+                    CellInfo *lc_prev =
+                            net_driven_by(ctx, cell->ports.at(ctx->id("I2")).net, is_lc, ctx->id("LO"));
+                    if (lc_prev != nullptr) {
+                        if (cell->constr_parent != lc_prev->constr_parent) {
+                            // Cell is the parent
+                            if (cell->constr_parent == nullptr)
+                                return nullptr;
+                            // Cell has a parent, but it's not the same as lc_prev's
+                            //   nor is it lc_prev
+                            if (cell->constr_parent != lc_prev)
+                                return nullptr;
+                        }
+                        else {
+                            // Have the same parent (or both have no parents)
+                        }
+                    }
+                    return lc_prev;
+                },
+                [](const Context *ctx, const CellInfo *cell) -> CellInfo* {
+                    CellInfo *lc_next = cell->ports.count(ctx->id("LO")) ?
+                            net_only_drives(ctx, cell->ports.at(ctx->id("LO")).net, is_lc, ctx->id("I2"), true) : nullptr;
+                    if (lc_next != nullptr) {
+                        if (cell->constr_parent != lc_next->constr_parent) {
+                            // lc_next is the parent
+                            if (lc_next == nullptr)
+                                return nullptr;
+                            // lc_next has a parent, but it's not the same as cell's
+                            //   nor is it cell
+                            if (lc_next != cell->constr_parent)
+                                return nullptr;
+                        }
+                        else {
+                            // Have the same parent (or both have no parents)
+                        }
+                    }
+                    return lc_next;
+                });
+        if (lut_cascades.empty())
+            return;
+
+        int incompatible = 0;
+        for (auto &cascade : lut_cascades) {
+            if (cascade.cells.size() > 8) {
+                log_warning("LUT cascade starting at '%s' is longer than 8 LUTs\n", cascade.cells.front()->name.c_str(ctx));
+                continue;
+            }
+
+            if (!ctx->logicCellsCompatible(const_cast<const CellInfo**>(cascade.cells.data()), cascade.cells.size())) {
+                if (ctx->verbose)
+                    log_info("Incompatible LUT cascade starting at '%s'\n", cascade.cells.front()->name.c_str(ctx));
+                continue;
+            }
+
+            if (ctx->verbose)
+                log_info("Placing LUT cascade starting at '%s'\n", cascade.cells.front()->name.c_str(ctx));
+
+            // Place carry cascade
+            for (int i = 1; i < int(cascade.cells.size()); i++) {
+                cascade.cells.at(i)->constr_x = 0;
+                cascade.cells.at(i)->constr_y = 0;
+                cascade.cells.at(i)->constr_z = i;
+                cascade.cells.at(i)->constr_parent = cascade.cells.at(0);
+                cascade.cells.at(0)->constr_children.push_back(cascade.cells.at(i));
+            }
+        }
+        log_info("    %4d/%zu LUT cascade(s) not compatible for same tile.\n", incompatible, lut_cascades.size());
+    }
+
   public:
     ChainConstrainer(Context *ctx) : ctx(ctx){};
-    void constrain_chains() { process_carries(); }
+    void constrain_chains()
+    {
+        process_carries();
+        process_cascades();
+    }
 };
 
 void constrain_chains(Context *ctx)
