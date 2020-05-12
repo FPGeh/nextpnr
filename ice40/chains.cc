@@ -233,8 +233,8 @@ class ChainConstrainer
                 [](const Context *ctx, const
 
                    CellInfo *cell) {
-                    CellInfo *carry_prev =
-                            net_driven_by(ctx, cell->ports.at(ctx->id("CIN")).net, is_lc, ctx->id("COUT"));
+                    CellInfo *carry_prev = cell->ports.count(ctx->id("CIN")) ?
+                            net_driven_by(ctx, cell->ports.at(ctx->id("CIN")).net, is_lc, ctx->id("COUT")) : nullptr;
                     if (carry_prev != nullptr)
                         return carry_prev;
                     CellInfo *i3_prev = net_driven_by(ctx, cell->ports.at(ctx->id("I3")).net, is_lc, ctx->id("COUT"));
@@ -243,12 +243,12 @@ class ChainConstrainer
                     return (CellInfo *)nullptr;
                 },
                 [](const Context *ctx, const CellInfo *cell) {
-                    CellInfo *carry_next =
-                            net_only_drives(ctx, cell->ports.at(ctx->id("COUT")).net, is_lc, ctx->id("CIN"), false);
+                    CellInfo *carry_next = cell->ports.count(ctx->id("COUT")) ?
+                            net_only_drives(ctx, cell->ports.at(ctx->id("COUT")).net, is_lc, ctx->id("CIN"), false) : nullptr;
                     if (carry_next != nullptr)
                         return carry_next;
-                    CellInfo *i3_next =
-                            net_only_drives(ctx, cell->ports.at(ctx->id("COUT")).net, is_lc, ctx->id("I3"), false);
+                    CellInfo *i3_next = cell->ports.count(ctx->id("COUT")) ?
+                            net_only_drives(ctx, cell->ports.at(ctx->id("COUT")).net, is_lc, ctx->id("I3"), false) : nullptr;
                     if (i3_next != nullptr)
                         return i3_next;
                     return (CellInfo *)nullptr;
