@@ -195,12 +195,7 @@ delay_t Arch::predictDelay(const NetInfo *net_info, const PortRef &sink) const
     if (driver.port == id_COUT) {
         if (driver_loc.y == sink_loc.y)
             return 0;
-        // FIXME: Is it 250 for HX, LX, and U?
         return 250;
-    }
-
-    if (driver.port == id_LO) {
-        // TODO: Find number to go here
     }
 
     int dx = abs(sink_loc.x - driver_loc.x);
