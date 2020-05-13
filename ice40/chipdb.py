@@ -461,6 +461,8 @@ def pipdelay(src_idx, dst_idx, db):
         return db["IoInMux.I.O"]
 
     if re.match(r"lutff_\d+/in_\d+$", dst[2]):
+        if src[2].endswith("/lout"):
+            return 0
         return db["InMux.I.O"]
 
     if re.match(r"lutff_\d+/in_\d+_lut", dst[2]):
