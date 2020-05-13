@@ -198,6 +198,9 @@ delay_t Arch::predictDelay(const NetInfo *net_info, const PortRef &sink) const
         return 250;
     }
 
+    if (driver.port == id_LO)
+        return 0;
+
     int dx = abs(sink_loc.x - driver_loc.x);
     int dy = abs(sink_loc.y - driver_loc.y);
 

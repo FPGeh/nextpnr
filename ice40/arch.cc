@@ -665,6 +665,12 @@ bool Arch::getBudgetOverride(const NetInfo *net_info, const PortRef &sink, delay
         }
         return true;
     }
+    if (driver.port == id_LO) {
+        NPNR_ASSERT(sink.cell->constr_parent);
+        NPNR_ASSERT((!driver.cell->constr_parent && sink.cell->constr_z == 1) || sink.cell->constr_z == driver.cell->constr_z+1);
+        budget = 0;
+        return true;
+    }
     return false;
 }
 
